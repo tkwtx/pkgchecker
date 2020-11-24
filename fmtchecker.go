@@ -20,27 +20,29 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
+var targetFmtFunc = []string{"Println", "Printf", "Print"}
+
 func run(pass *analysis.Pass) (interface{}, error) {
 	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	nodeFilter := []ast.Node{
-		(*ast.GenDecl)(nil),
-		(*ast.Ident)(nil),
-		(*ast.FuncDecl)(nil),
-		(*ast.FuncLit)(nil),
-		(*ast.BasicLit)(nil),
-		(*ast.FuncLit)(nil),
+		(*ast.ExprStmt)(nil),
 	}
 
 	isp.Preorder(nodeFilter, func(n ast.Node) {
-		//fmt.Println(n," type:", reflect.TypeOf(n))
 		switch n := n.(type) {
-		case *ast.Ident:
-			if fmtCheck(n.Name) {
-				pass.Report(analysis.Diagnostic{
-					Pos:     n.Pos(),
-					Message: "use!",
-				})
+		case *ast.ExprStmt:
+			switch n2 := n.X.(type) {
+			case *ast.CallExpr:
+				switch n3 := n2.Fun.(type) {
+				case *ast.SelectorExpr:
+					if n3.X.(*ast.Ident).Name == "fmt" && fmtCheck(n3.Sel.Name) {
+						pass.Report(analysis.Diagnostic{
+							Pos:     n.Pos(),
+							Message: "use!",
+						})
+					}
+				}
 			}
 		}
 	})
@@ -49,5 +51,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 }
 
 func fmtCheck(s string) bool {
-	return s == "Println" || s == "Printf" || s == "Print"
+	for _, v := range targetFmtFunc {
+		if s == v {
+			return true
+		}
+	}
+	return false
 }

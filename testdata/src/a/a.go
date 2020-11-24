@@ -13,11 +13,15 @@ func f() {
 	fmt.Println(result) // want "use!"
 	log.Println(result) // this is not used fmt package.
 
-	fmt.Printf("%v", result) // want "use!"
-	fmt.Print(result)        // want "use!"
-
+	fmt.Printf("%v", result)                 // want "use!"
+	fmt.Print(result)                        // want "use!"
+	callback(func() { fmt.Println(result) }) // want "use!"
 }
 
 func add(n1, n2 int) int {
 	return n1 + n2
+}
+
+func callback(f func()) {
+	f()
 }
