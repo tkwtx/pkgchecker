@@ -11,6 +11,7 @@ func f() {
 	var n2 = 3
 	result := add(n1, n2)
 	fmt.Println(result) // want "use!"
+	// fmt.Println(result)
 	log.Println(result) // this is not used fmt package.
 
 	fmt.Printf("%v", result)                 // want "use!"

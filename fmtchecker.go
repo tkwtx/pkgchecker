@@ -20,7 +20,15 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
-var targetFmtFunc = []string{"Println", "Printf", "Print"}
+type TargetFunc struct {
+	pkgName string
+	funcs   []string
+}
+
+var targetFunc = TargetFunc{
+	pkgName: "fmt",
+	funcs:   []string{"Println", "Printf", "Print"},
+}
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -36,7 +44,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			case *ast.CallExpr:
 				switch n3 := n2.Fun.(type) {
 				case *ast.SelectorExpr:
-					if n3.X.(*ast.Ident).Name == "fmt" && fmtCheck(n3.Sel.Name) {
+					if targetFunc.checkFunc(n3) {
 						pass.Report(analysis.Diagnostic{
 							Pos:     n.Pos(),
 							Message: "use!",
@@ -50,10 +58,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func fmtCheck(s string) bool {
-	for _, v := range targetFmtFunc {
-		if s == v {
-			return true
+func (t *TargetFunc) checkFunc(expr ast.Expr) bool {
+	switch n := expr.(type) {
+	case *ast.SelectorExpr:
+		if n.X.(*ast.Ident).Name == t.pkgName {
+			for _, v := range t.funcs {
+				if n.Sel.Name == v {
+					return true
+				}
+			}
 		}
 	}
 	return false
