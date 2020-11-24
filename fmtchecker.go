@@ -21,20 +21,33 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
-	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
+	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
 	nodeFilter := []ast.Node{
+		(*ast.GenDecl)(nil),
 		(*ast.Ident)(nil),
+		(*ast.FuncDecl)(nil),
+		(*ast.FuncLit)(nil),
+		(*ast.BasicLit)(nil),
+		(*ast.FuncLit)(nil),
 	}
 
-	inspect.Preorder(nodeFilter, func(n ast.Node) {
+	isp.Preorder(nodeFilter, func(n ast.Node) {
+		//fmt.Println(n," type:", reflect.TypeOf(n))
 		switch n := n.(type) {
 		case *ast.Ident:
-			if n.Name == "gopher" {
-				pass.Reportf(n.Pos(), "identifier is gopher")
+			if fmtCheck(n.Name) {
+				pass.Report(analysis.Diagnostic{
+					Pos:     n.Pos(),
+					Message: "use!",
+				})
 			}
 		}
 	})
 
 	return nil, nil
+}
+
+func fmtCheck(s string) bool {
+	return s == "Println" || s == "Printf" || s == "Print"
 }
