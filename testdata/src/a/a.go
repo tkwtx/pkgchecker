@@ -10,13 +10,12 @@ func f() {
 	var n1 = 1
 	var n2 = 3
 	result := add(n1, n2)
-	fmt.Println(result) // want "use!"
-	// fmt.Println(result)
-	log.Println(result) // this is not used fmt package.
+	fmt.Println(result) // want "fmt package is used!"
+	log.Println(result) // fmt package is not used .
 
-	fmt.Printf("%v", result)                 // want "use!"
-	fmt.Print(result)                        // want "use!"
-	callback(func() { fmt.Println(result) }) // want "use!"
+	fmt.Printf("%v", result)                 // want "fmt package is used!"
+	fmt.Print(result)                        // want "fmt package is used!"
+	callback(func() { fmt.Println(result) }) // want "fmt package is used!"
 }
 
 func add(n1, n2 int) int {

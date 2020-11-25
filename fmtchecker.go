@@ -38,20 +38,23 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	isp.Preorder(nodeFilter, func(n ast.Node) {
-		switch n := n.(type) {
-		case *ast.ExprStmt:
-			switch n2 := n.X.(type) {
-			case *ast.CallExpr:
-				switch n3 := n2.Fun.(type) {
-				case *ast.SelectorExpr:
-					if targetFunc.checkFunc(n3) {
-						pass.Report(analysis.Diagnostic{
-							Pos:     n.Pos(),
-							Message: "use!",
-						})
-					}
-				}
-			}
+		expr, ok := n.(*ast.ExprStmt)
+		if !ok {
+			return
+		}
+		call, ok := expr.X.(*ast.CallExpr)
+		if !ok {
+			return
+		}
+		selector, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return
+		}
+		if targetFunc.checkFunc(selector) {
+			pass.Report(analysis.Diagnostic{
+				Pos:     n.Pos(),
+				Message: "fmt package is used!",
+			})
 		}
 	})
 
@@ -59,15 +62,21 @@ func run(pass *analysis.Pass) (interface{}, error) {
 }
 
 func (t *TargetFunc) checkFunc(expr ast.Expr) bool {
-	switch n := expr.(type) {
-	case *ast.SelectorExpr:
-		if n.X.(*ast.Ident).Name == t.pkgName {
-			for _, v := range t.funcs {
-				if n.Sel.Name == v {
-					return true
-				}
+	n, ok := expr.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	id, ok := n.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+	if id.Name == t.pkgName {
+		for _, v := range t.funcs {
+			if n.Sel.Name == v {
+				return true
 			}
 		}
 	}
+
 	return false
 }
