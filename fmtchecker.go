@@ -21,17 +21,17 @@ var Analyzer = &analysis.Analyzer{
 	},
 }
 
-type TargetFunc struct {
+type TargetPkg struct {
 	packages []string
 }
 
-type pkg struct {
+type resultPkg struct {
 	packageName string
 	funcName    string
 	ok          bool
 }
 
-var targetFunc = new(TargetFunc)
+var targetPkg = new(TargetPkg)
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -45,7 +45,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		switch n := n.(type) {
 		case *ast.GenDecl:
 			if result := getImport(n); result != nil {
-				targetFunc.packages = result
+				targetPkg.packages = result
 			}
 		case *ast.ExprStmt:
 			call, ok := n.X.(*ast.CallExpr)
@@ -56,7 +56,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if !ok {
 				return
 			}
-			if result := targetFunc.checkFunc(selector); result.ok {
+			if result := targetPkg.checkFunc(selector); result.ok {
 				pass.Report(analysis.Diagnostic{
 					Pos:     n.Pos(),
 					Message: "use " + result.packageName + "." + result.funcName,
@@ -84,25 +84,25 @@ func getImport(n *ast.GenDecl) (imports []string) {
 			imports = append(imports, alias)
 		} else {
 			// Case: don't use alias import
-			replaceStr := strings.Replace(importSpec.Path.Value, "\"", "", 2)
-			imports = append(imports, replaceStr)
+			replacedStr := strings.Replace(importSpec.Path.Value, "\"", "", 2)
+			imports = append(imports, replacedStr)
 		}
 	}
 	return
 }
 
-func (t *TargetFunc) checkFunc(expr ast.Expr) pkg {
+func (t *TargetPkg) checkFunc(expr ast.Expr) resultPkg {
 	n, ok := expr.(*ast.SelectorExpr)
 	if !ok {
-		return pkg{ok: false}
+		return resultPkg{ok: false}
 	}
 	id, ok := n.X.(*ast.Ident)
 	if !ok {
-		return pkg{ok: false}
+		return resultPkg{ok: false}
 	}
 	for _, v := range t.packages {
 		if v == id.Name {
-			return pkg{
+			return resultPkg{
 				packageName: id.Name,
 				funcName:    n.Sel.Name,
 				ok:          true,
@@ -110,5 +110,5 @@ func (t *TargetFunc) checkFunc(expr ast.Expr) pkg {
 		}
 	}
 
-	return pkg{ok: false}
+	return resultPkg{ok: false}
 }
