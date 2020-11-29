@@ -1,8 +1,8 @@
 package fmtchecker
 
 import (
-	"fmt"
 	"go/ast"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -22,14 +22,16 @@ var Analyzer = &analysis.Analyzer{
 }
 
 type TargetFunc struct {
-	pkgName string
-	funcs   []string
+	packages []string
 }
 
-var targetFunc = TargetFunc{
-	pkgName: "fmt",
-	funcs:   []string{"Println", "Printf", "Print"},
+type pkg struct {
+	packageName string
+	funcName    string
+	ok          bool
 }
+
+var targetFunc = new(TargetFunc)
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -41,13 +43,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 	isp.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
-		// import取得
 		case *ast.GenDecl:
-
 			if result := getImport(n); result != nil {
-				fmt.Println(result)
+				targetFunc.packages = result
 			}
-			// func取得
 		case *ast.ExprStmt:
 			call, ok := n.X.(*ast.CallExpr)
 			if !ok {
@@ -57,10 +56,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if !ok {
 				return
 			}
-			if targetFunc.checkFunc(selector) {
+			if result := targetFunc.checkFunc(selector); result.ok {
 				pass.Report(analysis.Diagnostic{
 					Pos:     n.Pos(),
-					Message: "fmt package is used!",
+					Message: "use " + result.packageName + "." + result.funcName,
 				})
 			}
 		}
@@ -85,28 +84,31 @@ func getImport(n *ast.GenDecl) (imports []string) {
 			imports = append(imports, alias)
 		} else {
 			// Case: don't use alias import
-			imports = append(imports, importSpec.Path.Value)
+			replaceStr := strings.Replace(importSpec.Path.Value, "\"", "", 2)
+			imports = append(imports, replaceStr)
 		}
 	}
 	return
 }
 
-func (t *TargetFunc) checkFunc(expr ast.Expr) bool {
+func (t *TargetFunc) checkFunc(expr ast.Expr) pkg {
 	n, ok := expr.(*ast.SelectorExpr)
 	if !ok {
-		return false
+		return pkg{ok: false}
 	}
 	id, ok := n.X.(*ast.Ident)
 	if !ok {
-		return false
+		return pkg{ok: false}
 	}
-	if id.Name == t.pkgName {
-		for _, v := range t.funcs {
-			if n.Sel.Name == v {
-				return true
+	for _, v := range t.packages {
+		if v == id.Name {
+			return pkg{
+				packageName: id.Name,
+				funcName:    n.Sel.Name,
+				ok:          true,
 			}
 		}
 	}
 
-	return false
+	return pkg{ok: false}
 }
