@@ -1,6 +1,7 @@
 package fmtchecker
 
 import (
+	"fmt"
 	"go/ast"
 	"strings"
 
@@ -28,10 +29,7 @@ type TargetPkg struct {
 type resultPkg struct {
 	packageName string
 	funcName    string
-	ok          bool
 }
-
-var targetPkg = new(TargetPkg)
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -40,6 +38,8 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		(*ast.ExprStmt)(nil),
 		(*ast.GenDecl)(nil),
 	}
+
+	var targetPkg = new(TargetPkg)
 
 	isp.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
@@ -56,10 +56,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			if !ok {
 				return
 			}
-			if result := targetPkg.checkFunc(selector); result.ok {
+			if result := targetPkg.checkFunc(selector); result != nil {
 				pass.Report(analysis.Diagnostic{
 					Pos:     n.Pos(),
-					Message: "use " + result.packageName + "." + result.funcName,
+					Message: fmt.Sprintf("use %s.%s", result.packageName, result.funcName),
 				})
 			}
 		}
@@ -91,24 +91,23 @@ func getImport(n *ast.GenDecl) (imports []string) {
 	return
 }
 
-func (t *TargetPkg) checkFunc(expr ast.Expr) resultPkg {
+func (t *TargetPkg) checkFunc(expr ast.Expr) *resultPkg {
 	n, ok := expr.(*ast.SelectorExpr)
 	if !ok {
-		return resultPkg{ok: false}
+		return nil
 	}
 	id, ok := n.X.(*ast.Ident)
 	if !ok {
-		return resultPkg{ok: false}
+		return nil
 	}
 	for _, v := range t.packages {
 		if v == id.Name {
-			return resultPkg{
+			return &resultPkg{
 				packageName: id.Name,
 				funcName:    n.Sel.Name,
-				ok:          true,
 			}
 		}
 	}
 
-	return resultPkg{ok: false}
+	return nil
 }
