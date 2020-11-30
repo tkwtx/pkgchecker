@@ -1,8 +1,9 @@
 package a
 
 import (
-	"fmt"
+	foo "fmt"
 	"log"
+	_ "reflect"
 )
 
 func f() {
@@ -10,12 +11,12 @@ func f() {
 	var n1 = 1
 	var n2 = 3
 	result := add(n1, n2)
-	fmt.Println(result) // want "fmt package is used!"
-	log.Println(result) // fmt package is not used .
+	foo.Println(result) // want "use foo.Println"
+	log.Println(result) // want "use log.Println"
 
-	fmt.Printf("%v", result)                 // want "fmt package is used!"
-	fmt.Print(result)                        // want "fmt package is used!"
-	callback(func() { fmt.Println(result) }) // want "fmt package is used!"
+	foo.Printf("%v", result)                 // want "use foo.Printf"
+	foo.Print(result)                        // want "use foo.Print"
+	callback(func() { foo.Println(result) }) // want "use foo.Println"
 }
 
 func add(n1, n2 int) int {
