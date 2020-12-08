@@ -31,6 +31,12 @@ type resultPkg struct {
 	funcName    string
 }
 
+var name string
+
+func init() {
+	Analyzer.Flags.StringVar(&name, "name", name, "name of the function to find")
+}
+
 func run(pass *analysis.Pass) (interface{}, error) {
 	isp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 
@@ -101,7 +107,7 @@ func (t *TargetPkg) checkFunc(expr ast.Expr) *resultPkg {
 		return nil
 	}
 	for _, v := range t.packages {
-		if v == id.Name {
+		if v == id.Name && name == id.Name {
 			return &resultPkg{
 				packageName: id.Name,
 				funcName:    n.Sel.Name,
