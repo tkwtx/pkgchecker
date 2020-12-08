@@ -12,7 +12,7 @@ func f() {
 	var n2 = 3
 	result := add(n1, n2)
 	foo.Println(result) // want "use foo.Println"
-	log.Println(result) // want "use log.Println"
+	log.Println(result) // This don't output "log" because flag is set "foo".
 
 	foo.Printf("%v", result)                 // want "use foo.Printf"
 	foo.Print(result)                        // want "use foo.Print"
