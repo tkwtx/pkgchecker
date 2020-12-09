@@ -1,4 +1,4 @@
-module github.com/tkwtx/fmtchecker
+module github.com/tkwtx/pkgchecker
 
 go 1.15
 
