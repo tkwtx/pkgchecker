@@ -1,8 +1,8 @@
 module github.com/tkwtx/pkgchecker
 
-go 1.15
+go 1.16
 
 require (
-	github.com/gostaticanalysis/testutil v0.3.0
-	golang.org/x/tools v0.0.0-20201121010211-780cb80bd7fb
+	github.com/gostaticanalysis/testutil v0.3.1
+	golang.org/x/tools v0.1.1-0.20210205202024-ef80cdb6ec6d
 )
