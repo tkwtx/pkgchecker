@@ -51,7 +51,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		switch n := n.(type) {
 		case *ast.GenDecl:
 			if result, ok := getImport(n); ok {
-				targetPkg.packages = result
+				targetPkg.insert(result)
 			}
 		case *ast.ExprStmt:
 			call, ok := n.X.(*ast.CallExpr)
@@ -96,6 +96,10 @@ func getImport(n *ast.GenDecl) ([]string, bool) {
 		}
 	}
 	return imports, true
+}
+
+func (t *TargetPkg) insert(result []string) {
+	t.packages = result
 }
 
 func (t *TargetPkg) checkFunc(expr ast.Expr) *resultPkg {
