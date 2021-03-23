@@ -50,7 +50,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	isp.Preorder(nodeFilter, func(n ast.Node) {
 		switch n := n.(type) {
 		case *ast.GenDecl:
-			if result := getImport(n); result != nil {
+			if result, ok := getImport(n); ok {
 				targetPkg.packages = result
 			}
 		case *ast.ExprStmt:
@@ -75,11 +75,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func getImport(n *ast.GenDecl) (imports []string) {
+func getImport(n *ast.GenDecl) ([]string, bool) {
+	var imports []string
 	for _, spec := range n.Specs {
 		importSpec, ok := spec.(*ast.ImportSpec)
 		if !ok {
-			return nil
+			return nil, false
 		}
 		if importSpec.Name != nil {
 			// Case: use alias import
@@ -94,7 +95,7 @@ func getImport(n *ast.GenDecl) (imports []string) {
 			imports = append(imports, replacedStr)
 		}
 	}
-	return
+	return imports, true
 }
 
 func (t *TargetPkg) checkFunc(expr ast.Expr) *resultPkg {
